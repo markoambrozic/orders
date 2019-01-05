@@ -20,6 +20,7 @@
 */
 package com.kumuluz.ee.samples.microservices.simple;
 
+import com.kumuluz.ee.discovery.annotations.RegisterService;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
@@ -28,5 +29,6 @@ import javax.ws.rs.core.Application;
  * @since 2.3.0
  */
 @ApplicationPath("/")
+@RegisterService
 public class OrdersApplication extends Application {
 }
