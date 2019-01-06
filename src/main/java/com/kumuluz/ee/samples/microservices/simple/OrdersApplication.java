@@ -28,7 +28,7 @@ import javax.ws.rs.core.Application;
  * @author Tilen Faganel
  * @since 2.3.0
  */
-@ApplicationPath("/")
 @RegisterService
+@ApplicationPath("/")
 public class OrdersApplication extends Application {
 }

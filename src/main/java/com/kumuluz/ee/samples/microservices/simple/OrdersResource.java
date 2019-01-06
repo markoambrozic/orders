@@ -2,6 +2,10 @@ package com.kumuluz.ee.samples.microservices.simple;
 
 import com.kumuluz.ee.samples.microservices.simple.Models.Order;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DeliverCallback;
 import org.json.JSONObject;
 
 import javax.enterprise.context.RequestScoped;
@@ -13,8 +17,15 @@ import javax.ws.rs.*;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
+import com.kumuluz.ee.logs.LogManager;
+import com.kumuluz.ee.logs.Logger;
+import com.kumuluz.ee.logs.cdi.Log;
 
 @Path("/orders")
 @RequestScoped
@@ -27,6 +38,10 @@ public class OrdersResource {
 
     @Inject
     private OrdersProperties ordersProperties;
+
+    private static final Logger LOG = LogManager.getLogger(OrdersResource.class.getName());
+
+    private final static String QUEUE_NAME = "orders";
 
     @GET
     public Response getOrders() {
@@ -51,32 +66,54 @@ public class OrdersResource {
     }
 
     @POST
-    public Response placeOrder(JSONObject orderJSON) {
+    @Path("/completeOrder")
+    public Response placeOrder(String orderJSON) {
+        ConnectionFactory factory = new ConnectionFactory();
+        try {
+            factory.setUri("amqps://admin:admin@portal-ssl676-94.bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa.3782795196.composedb.com:16865/bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa");
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        }
+        factory.setHandshakeTimeout(60000);
 
-        /*if (b == null || b.getId() == null) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+        try {
+            try(Connection connection = factory.newConnection();
+            Channel channel = connection.createChannel()) {
+                channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+                channel.basicPublish("", QUEUE_NAME, null, orderJSON.getBytes("UTF-8"));
+                LOG.trace("Order sent to queue: "+orderJSON);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(e).build();
         }
 
-        Response bookResponse = ClientBuilder.newClient()
-                .target(ordersProperties.getCatalogUrl()).path("books").path(b.getId().toString()).request().get();
+        LOG.trace("New order created.");
 
-        if (!bookResponse.getStatusInfo().getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        return Response.status(Response.Status.CREATED).entity(orderJSON).build();
+    }
 
-        Order o = new Order();
-        o.setBook(bookResponse.readEntity(Book.class));
-        o.setOrderDate(new Date());
+    @GET
+    @Path("/getOrdersFromQueue")
+    public Response getOrdersFromQueue() throws Exception {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setUri("amqps://admin:admin@portal-ssl676-94.bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa.3782795196.composedb.com:16865/bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa");
+        Connection connection = factory.newConnection();
+        Channel channel = connection.createChannel();
 
-        em.getTransaction().begin();
+        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
 
-        em.persist(o);
+        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+            String message = new String(delivery.getBody(), "UTF-8");
+            LOG.trace("Processing order: "+message);
+        };
 
-        em.getTransaction().commit();*/
+        channel.basicConsume(QUEUE_NAME, true, deliverCallback, consumerTag -> { });
 
-        Order o = new Order();
-        o.setOrderDate(new Date());
-
-        return Response.status(Response.Status.CREATED).entity(o).build();
+        return Response.status(Response.Status.OK).build();
     }
 }
