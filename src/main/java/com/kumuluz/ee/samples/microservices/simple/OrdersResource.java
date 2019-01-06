@@ -31,6 +31,7 @@ import com.kumuluz.ee.logs.cdi.Log;
 @RequestScoped
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Log
 public class OrdersResource {
 
     @PersistenceContext
