@@ -27,6 +27,21 @@ import com.kumuluz.ee.logs.LogManager;
 import com.kumuluz.ee.logs.Logger;
 import com.kumuluz.ee.logs.cdi.Log;
 
+
+import com.kumuluz.ee.discovery.annotations.DiscoverService;
+import org.json.JSONObject;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.Optional;
+import com.kumuluz.ee.common.runtime.EeRuntime;
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 @Path("/orders")
 @RequestScoped
 @Consumes(MediaType.APPLICATION_JSON)
@@ -43,6 +58,15 @@ public class OrdersResource {
     private static final Logger LOG = LogManager.getLogger(OrdersResource.class.getName());
 
     private final static String QUEUE_NAME = "orders";
+
+    @Inject
+    @DiscoverService(value = "emailing-service", environment = "dev", version = "*")
+    private Optional<WebTarget> e_target;
+
+    @Inject
+    @DiscoverService(value = "journaling-service", environment = "dev", version = "*")
+    private Optional<WebTarget> j_target;
+
 
     @GET
     public Response getOrders() {
@@ -93,7 +117,54 @@ public class OrdersResource {
             return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(e).build();
         }
 
+
+
+        //Send e-mail
+        JSONObject email = new JSONObject();
+
+        if (e_target.isPresent()) {
+            WebTarget service = e_target.get().path("/sendEmail");
+            email.put("from","dmvoicestudios@gmail.com");
+            email.put("to","dmvoicestudios@gmail.com");
+            email.put("subject","order completed!");
+            email.put("body","your order has been completed mr_customer");
+
+            try {
+
+                service.request().post(Entity.json(email.toString()));
+            } catch (ProcessingException e) {
+                e.printStackTrace();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+
+            }
+        }
+
+
+        //Make new journal entry
+        JSONObject entry = new JSONObject();
+
+        if (j_target.isPresent()) {
+            WebTarget service = j_target.get().path("/insertJournal");
+            entry.put("id",1);
+            entry.put("entryJSON",orderJSON);
+            entry.put("entryDate",new SimpleDateFormat("dd-MM-yyyy").format(new Date()));
+            entry.put("entryService","Orders");
+            entry.put("entryInstance_Id",EeRuntime.getInstance().getInstanceId());
+            try {
+
+                service.request().post(Entity.json(entry.toString()));
+            } catch (ProcessingException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
         LOG.trace("New order created.");
+
 
         return Response.status(Response.Status.CREATED).entity(orderJSON).build();
     }
