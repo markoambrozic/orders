@@ -42,8 +42,6 @@ public class OrdersResource {
 
     private static final Logger LOG = LogManager.getLogger(OrdersResource.class.getName());
 
-    private final static String QUEUE_NAME = "orders";
-
     @GET
     public Response getOrders() {
 
@@ -68,30 +66,9 @@ public class OrdersResource {
 
     @POST
     @Path("/completeOrder")
-    public Response placeOrder(String orderJSON) {
-        ConnectionFactory factory = new ConnectionFactory();
-        try {
-            factory.setUri(ordersProperties.getRabbitMqUri());
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        }
-        factory.setHandshakeTimeout(60000);
-
-        try {
-            try(Connection connection = factory.newConnection();
-            Channel channel = connection.createChannel()) {
-                channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-                channel.basicPublish("", QUEUE_NAME, null, orderJSON.getBytes("UTF-8"));
-                LOG.trace("Order sent to queue: "+orderJSON);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(e).build();
-        }
+    public Response placeOrder(String orderJSON) throws Exception {
+        RabbitBean rabbitMq = new RabbitBean();
+        rabbitMq.insertOrderIntoQueue(ordersProperties.getRabbitMqUri(), orderJSON);
 
         LOG.trace("New order created.");
 
@@ -101,19 +78,8 @@ public class OrdersResource {
     @GET
     @Path("/getOrdersFromQueue")
     public Response getOrdersFromQueue() throws Exception {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setUri(ordersProperties.getRabbitMqUri());
-        Connection connection = factory.newConnection();
-        Channel channel = connection.createChannel();
-
-        channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-
-        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String message = new String(delivery.getBody(), "UTF-8");
-            LOG.trace("Processing order: "+message);
-        };
-
-        channel.basicConsume(QUEUE_NAME, true, deliverCallback, consumerTag -> { });
+        RabbitBean rabbitMq = new RabbitBean();
+        rabbitMq.getOrdersFromQueue(ordersProperties.getRabbitMqUri());
 
         return Response.status(Response.Status.OK).build();
     }
