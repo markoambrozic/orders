@@ -28,17 +28,17 @@ import javax.enterprise.context.ApplicationScoped;
  * @author Tilen Faganel
  * @since 2.3.0
  */
-@ConfigBundle("orders")
 @ApplicationScoped
+@ConfigBundle("orders")
 public class OrdersProperties {
 
-    private String catalogUrl = "http://localhost:8080";
+    private String rabbitMqUri = "http://localhost:8080";
 
-    public String getCatalogUrl() {
-        return catalogUrl;
+    public String getRabbitMqUri() {
+        return rabbitMqUri;
     }
 
-    public void setCatalogUrl(String catalogUrl) {
-        this.catalogUrl = catalogUrl;
+    public void setRabbitMqUri(String rabbitMqUri) {
+        this.rabbitMqUri = rabbitMqUri;
     }
 }

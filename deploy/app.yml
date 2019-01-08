@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: orders
-          image: markoambrozic/orders:1.0.4
+          image: markoambrozic/orders:1.0.6
           ports:
             - containerPort: 8080
           env:
