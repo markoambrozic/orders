@@ -28,7 +28,7 @@ public class RabbitBean {
     @CircuitBreaker
     @Fallback(fallbackMethod = "insertOrderIntoQueueFallback")
     @CommandKey("queue-order")
-    @Timeout(value = 1, unit = ChronoUnit.MICROS)
+    @Timeout
     public boolean insertOrderIntoQueue(String rabbitMqUri, String orderJSON) throws Exception {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUri(

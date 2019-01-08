@@ -23,7 +23,7 @@ kumuluzee:
         value: 5
       queue-order:
         timeout:
-          value: 1ms
+          value: 1s
         circuit-breaker:
           request-threshold: 10
           failure-ratio: 0.3
