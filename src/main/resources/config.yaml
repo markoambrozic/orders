@@ -14,3 +14,5 @@ kumuluzee:
       username: dbuser
       password: postgres
       max-pool-size: 20
+orders:
+  rabbit-mq-uri: amqps://admin:admin@portal-ssl676-94.bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa.3782795196.composedb.com:16865/bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa

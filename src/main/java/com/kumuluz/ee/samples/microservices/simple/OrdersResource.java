@@ -71,7 +71,7 @@ public class OrdersResource {
     public Response placeOrder(String orderJSON) {
         ConnectionFactory factory = new ConnectionFactory();
         try {
-            factory.setUri("amqps://admin:admin@portal-ssl676-94.bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa.3782795196.composedb.com:16865/bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa");
+            factory.setUri(ordersProperties.getRabbitMqUri());
         } catch (URISyntaxException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -102,7 +102,7 @@ public class OrdersResource {
     @Path("/getOrdersFromQueue")
     public Response getOrdersFromQueue() throws Exception {
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setUri("amqps://admin:admin@portal-ssl676-94.bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa.3782795196.composedb.com:16865/bmix-eu-gb-yp-76826436-8167-446f-8f80-b63de37b51aa");
+        factory.setUri(ordersProperties.getRabbitMqUri());
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
